@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Подпись</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  h2 {
+    margin-bottom: 10px;
+  }
+  .signature-pad {
+    border: 2px dashed #aaa;
+    border-radius: 8px;
+    display: inline-block;
+    position: relative;
+    background-color: #fff;
+  }
+  canvas {
+    background-color: white;
+    cursor: crosshair;
+  }
+  .buttons {
+    margin-top: 10px;
+  }
+  button {
+    padding: 8px 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #clear {
+    background-color: #ccc;
+  }
+  #save {
+    background-color: #4CAF50;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<h2>Поставьте подпись ниже</h2>
+<div class="signature-pad">
+  <canvas id="canvas" width="300" height="150"></canvas>
+</div>
+
+<div class="buttons">
+  <button id="clear">Очистить</button>
+  <button id="save">Сохранить</button>
+</div>
+
+<p id="status"></p>
+
+<script>
+  // ВСТАВЬТЕ СВОЙ API-ключ ImgBB сюда
+  const apiKey = 71863455e4d960dd4be49c8a19754da2;
+
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+
+  let drawing = false;
+
+  function startPosition(e) {
+    drawing = true;
+    draw(e);
+  }
+
+  function endPosition() {
+    drawing = false;
+    ctx.beginPath();
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineCap = "round";
+    ctx.lineTo(
+      (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+      (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+    );
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(
+      (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+      (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+    );
+  }
+
+  canvas.addEventListener("mousedown", startPosition);
+  canvas.addEventListener("mouseup", endPosition);
+  canvas.addEventListener("mousemove", draw);
+
+  canvas.addEventListener("touchstart", startPosition);
+  canvas.addEventListener("touchend", endPosition);
+  canvas.addEventListener("touchmove", draw);
+
+  document.getElementById("clear").addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+
+  document.getElementById("save").addEventListener("click", () => {
+    const imageData = canvas.toDataURL("image/png").split(",")[1];
+    document.getElementById("status").textContent = "Загрузка...";
+    fetch(https://api.imgbb.com/1/upload?key=${apiKey}, {
+      method: "POST",
+      body: new URLSearchParams({
+        image: imageData
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.data && data.data.url) {
+        navigator.clipboard.writeText(data.data.url);
+        document.getElementById("status").textContent = "✅ Ссылка на подпись скопирована в буфер обмена!";
+      } else {
+        document.getElementById("status").textContent = "Ошибка загрузки!";
+      }
+    })
+    .catch(() => {
+      document.getElementById("status").textContent = "Ошибка сети!";
+    });
+  });
+</script>
+
+</body>
+</html>
