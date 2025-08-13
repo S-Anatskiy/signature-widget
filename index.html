@@ -21,10 +21,10 @@
     background-color: #fff;
   }
   canvas {
-  background-color: white;
-  cursor: crosshair;
-  touch-action: none; /* чтобы тач-экран и мышь работали корректно */
-}
+    background-color: white;
+    cursor: crosshair;
+    touch-action: none; /* обязательно для тачей */
+  }
   .buttons {
     margin-top: 10px;
   }
@@ -60,8 +60,7 @@
 <p id="status"></p>
 
 <script>
-  // ВСТАВЬТЕ СВОЙ API-ключ ImgBB сюда
-  const apiKey = 71863455e4d960dd4be49c8a19754da2;
+  const apiKey = 71863455e4d960dd4be49c8a19754da2; // сюда вставьте ключ
 
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
@@ -70,59 +69,70 @@
 
   let drawing = false;
 
-  function startPosition(e) {
-    drawing = true;
-    draw(e);
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    } else {
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
   }
 
-  function endPosition() {
-    drawing = false;
+  function startPosition(e) {
+    drawing = true;
     ctx.beginPath();
+    const pos = getPos(e);
+    ctx.moveTo(pos.x, pos.y);
+    e.preventDefault();
+  }
+
+  function endPosition(e) {
+    drawing = false;
+    e.preventDefault();
   }
 
   function draw(e) {
     if (!drawing) return;
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    ctx.lineCap = "round";
-    ctx.lineTo(
-      (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
-      (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
-    );
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(
-      (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
-      (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
-    );
+    e.preventDefault();
   }
 
+  // Мышь
   canvas.addEventListener("mousedown", startPosition);
   canvas.addEventListener("mouseup", endPosition);
   canvas.addEventListener("mousemove", draw);
 
+  // Тач
   canvas.addEventListener("touchstart", startPosition);
   canvas.addEventListener("touchend", endPosition);
   canvas.addEventListener("touchmove", draw);
 
+  // Очистка
   document.getElementById("clear").addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   });
 
+  // Сохранение
   document.getElementById("save").addEventListener("click", () => {
     const imageData = canvas.toDataURL("image/png").split(",")[1];
     document.getElementById("status").textContent = "Загрузка...";
     fetch(https://api.imgbb.com/1/upload?key=${apiKey}, {
       method: "POST",
-      body: new URLSearchParams({
-        image: imageData
-      })
+      body: new URLSearchParams({ image: imageData })
     })
     .then(res => res.json())
     .then(data => {
       if (data.data && data.data.url) {
         navigator.clipboard.writeText(data.data.url);
-        document.getElementById("status").textContent = "✅ Ссылка на подпись скопирована в буфер обмена!";
+        document.getElementById("status").textContent = "✅ Ссылка на подпись скопирована!";
       } else {
         document.getElementById("status").textContent = "Ошибка загрузки!";
       }
@@ -135,4 +145,3 @@
 
 </body>
 </html>
-
